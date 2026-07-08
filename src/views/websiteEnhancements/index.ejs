@@ -1,0 +1,219 @@
+<div class="page-header">
+  <h1>Website Enhancements</h1>
+  <button class="btn btn-primary" onclick="openNewModal()">+ New Enhancement</button>
+</div>
+
+<div class="card">
+  <table>
+    <thead>
+      <tr>
+        <th class="col-drag"></th>
+        <th>Name</th>
+        <th>Description</th>
+        <th>Tasks</th>
+        <th class="col-actions">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (enhancements.length === 0) { %>
+        <tr>
+          <td colspan="5" class="empty-row">No enhancements found. <a href="#" onclick="openNewModal();return false;">Create one</a>.</td>
+        </tr>
+      <% } else { %>
+        <% enhancements.forEach(enhancement => { %>
+          <tr data-id="<%= enhancement.id %>">
+            <td class="col-drag drag-handle">&#9776;</td>
+            <td><a href="/website-enhancements/tasks/<%= enhancement.id %>"><%= enhancement.name %></a></td>
+            <td><%= enhancement.description %></td>
+            <td><%= enhancement._count.tasks %></td>
+            <td class="col-actions">
+              <button class="btn btn-sm btn-secondary"
+                data-id="<%= enhancement.id %>"
+                data-name="<%= encodeURIComponent(enhancement.name || '') %>"
+                data-description="<%= encodeURIComponent(enhancement.description || '') %>"
+                onclick="openEditModal(this)">Edit</button>
+              <form action="/website-enhancements/<%= enhancement.id %>?_method=DELETE" method="POST" style="display:inline;">
+                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this enhancement?')">Delete</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      <% } %>
+    </tbody>
+  </table>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+  function showToast(message, type) {
+    type = type || 'success';
+    var container = document.getElementById('toast-container');
+    var toast = document.createElement('div');
+    toast.className = 'toast toast-' + type;
+    toast.innerHTML = '<span>' + message + '</span><button class="toast-dismiss" onclick="dismissToast(this)">&times;</button>';
+    container.appendChild(toast);
+    setTimeout(function() { dismissToast(toast.querySelector('.toast-dismiss')); }, 4000);
+  }
+
+  function dismissToast(btn) {
+    var toast = btn.closest('.toast');
+    if (!toast) return;
+    toast.style.animation = 'toastOut 0.2s ease forwards';
+    setTimeout(function() { toast.remove(); }, 200);
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    var tbody = document.querySelector('table tbody');
+    if (tbody && typeof Sortable !== 'undefined') {
+      Sortable.create(tbody, {
+        handle: '.drag-handle',
+        animation: 150,
+        onEnd: function() {
+          var ids = Array.from(tbody.querySelectorAll('tr[data-id]')).map(function(r) { return r.dataset.id; });
+          fetch('/website-enhancements/reorder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: JSON.stringify({ ids: ids })
+          });
+        }
+      });
+    }
+
+    ['newModal','editModal','toast-container'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) document.body.appendChild(el);
+    });
+
+    <% if (messages.success && messages.success.length) { %>
+      showToast('<%= messages.success.toString().replace(/'/g, "\\'") %>', 'success');
+    <% } %>
+  });
+
+  function openModal(id) {
+    document.getElementById(id).style.display = 'flex';
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).style.display = 'none';
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { closeModal('newModal'); closeModal('editModal'); }
+  });
+
+  function openNewModal() {
+    document.getElementById('newName').value = '';
+    document.getElementById('newDescription').value = '';
+    document.getElementById('newErrors').style.display = 'none';
+    openModal('newModal');
+  }
+
+  function openEditModal(btn) {
+    document.getElementById('editId').value = btn.dataset.id;
+    document.getElementById('editName').value = decodeURIComponent(btn.dataset.name || '');
+    document.getElementById('editDescription').value = decodeURIComponent(btn.dataset.description || '');
+    document.getElementById('editErrors').style.display = 'none';
+    openModal('editModal');
+  }
+
+  function submitNew(e) {
+    e.preventDefault();
+    var errBox = document.getElementById('newErrors');
+    errBox.style.display = 'none';
+    fetch('/website-enhancements', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      body: JSON.stringify({
+        name: document.getElementById('newName').value,
+        description: document.getElementById('newDescription').value
+      })
+    }).then(function(r) { return r.json(); }).then(function(data) {
+      if (data.errors) {
+        errBox.innerHTML = data.errors.join('<br>');
+        errBox.style.display = 'block';
+      } else {
+        closeModal('newModal');
+        location.reload();
+      }
+    });
+  }
+
+  function submitEdit(e) {
+    e.preventDefault();
+    var id = document.getElementById('editId').value;
+    var errBox = document.getElementById('editErrors');
+    errBox.style.display = 'none';
+    fetch('/website-enhancements/' + id + '?_method=PUT', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      body: JSON.stringify({
+        name: document.getElementById('editName').value,
+        description: document.getElementById('editDescription').value
+      })
+    }).then(function(r) { return r.json(); }).then(function(data) {
+      if (data.errors) {
+        errBox.innerHTML = data.errors.join('<br>');
+        errBox.style.display = 'block';
+      } else {
+        closeModal('editModal');
+        location.reload();
+      }
+    });
+  }
+</script>
+
+<!-- New Enhancement Modal -->
+<div class="modal-backdrop" id="newModal" onclick="closeModal('newModal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2>New Enhancement</h2>
+      <button class="modal-close" onclick="closeModal('newModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="newErrors" class="flash flash-error" style="display:none;"></div>
+      <form id="newForm" onsubmit="submitNew(event)">
+        <div class="form-group">
+          <label for="newName">Name</label>
+          <input type="text" id="newName" name="name" placeholder="Enhancement name" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="newDescription">Description</label>
+          <textarea id="newDescription" name="description" rows="3" placeholder="Optional description"></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('newModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Enhancement Modal -->
+<div class="modal-backdrop" id="editModal" onclick="closeModal('editModal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Edit Enhancement</h2>
+      <button class="modal-close" onclick="closeModal('editModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="editErrors" class="flash flash-error" style="display:none;"></div>
+      <form id="editForm" onsubmit="submitEdit(event)">
+        <input type="hidden" id="editId">
+        <div class="form-group">
+          <label for="editName">Name</label>
+          <input type="text" id="editName" name="name" placeholder="Enhancement name" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="editDescription">Description</label>
+          <textarea id="editDescription" name="description" rows="3" placeholder="Optional description"></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('editModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

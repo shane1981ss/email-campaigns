@@ -1,0 +1,469 @@
+<div class="page-header">
+  <div>
+    <a href="/customer-segments" class="breadcrumb-link">&larr; Customer Segments</a>
+    <h1><%= segment.name %></h1>
+    <% if (segment.description) { %>
+      <p class="page-subtitle"><%= segment.description %></p>
+    <% } %>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+  function showToast(message, type) {
+    type = type || 'success';
+    var container = document.getElementById('toast-container');
+    var toast = document.createElement('div');
+    toast.className = 'toast toast-' + type;
+    toast.innerHTML = '<span>' + message + '</span><button class="toast-dismiss" onclick="dismissToast(this)">&times;</button>';
+    container.appendChild(toast);
+    setTimeout(function() { dismissToast(toast.querySelector('.toast-dismiss')); }, 4000);
+  }
+  function dismissToast(btn) {
+    var toast = btn.closest('.toast');
+    if (!toast) return;
+    toast.style.animation = 'toastOut 0.2s ease forwards';
+    setTimeout(function() { toast.remove(); }, 200);
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    var tc = document.getElementById('toast-container');
+    if (tc) document.body.appendChild(tc);
+    <% if (messages.success && messages.success.length) { %>
+      showToast('<%= messages.success.toString().replace(/'/g, "\\'") %>', 'success');
+    <% } %>
+  });
+</script>
+
+<!-- ── Entry Events ─────────────────────────────────────── -->
+<div class="section-header">
+  <h2 class="section-title">Entry Events</h2>
+  <button class="btn btn-primary btn-sm" onclick="openModal('newEntryModal')">+ Add Entry Event</button>
+</div>
+<div class="card" style="margin-bottom:1.5rem;">
+  <table>
+    <thead>
+      <tr>
+        <th class="col-id">#</th>
+        <th>Name</th>
+        <th>Description</th>
+        <th class="col-actions">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (segment.entryEvents.length === 0) { %>
+        <tr>
+          <td colspan="4" class="empty-row">No entry events. <a href="#" onclick="openModal('newEntryModal');return false;">Add one</a>.</td>
+        </tr>
+      <% } else { %>
+        <% segment.entryEvents.forEach(function(ev) { %>
+          <% var entryEvDesc = (allEvents.find(function(e){ return e.name === ev.name; }) || {}).description || ''; %>
+          <tr>
+            <td class="col-id"><%= ev.id %></td>
+            <td><%= ev.name %></td>
+            <td><%= entryEvDesc %></td>
+            <td class="col-actions">
+              <form action="/customer-segments/<%= segment.id %>/entry-events/<%= ev.id %>?_method=DELETE" method="POST" style="display:inline;">
+                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Remove this entry event?')">Remove</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      <% } %>
+    </tbody>
+  </table>
+</div>
+
+<!-- ── Exit Events ──────────────────────────────────────── -->
+<div class="section-header">
+  <h2 class="section-title">Exit Events</h2>
+  <button class="btn btn-primary btn-sm" onclick="openModal('newExitModal')">+ Add Exit Event</button>
+</div>
+<div class="card" style="margin-bottom:1.5rem;">
+  <table>
+    <thead>
+      <tr>
+        <th class="col-id">#</th>
+        <th>Name</th>
+        <th>Description</th>
+        <th class="col-actions">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (segment.exitEvents.length === 0) { %>
+        <tr>
+          <td colspan="4" class="empty-row">No exit events. <a href="#" onclick="openModal('newExitModal');return false;">Add one</a>.</td>
+        </tr>
+      <% } else { %>
+        <% segment.exitEvents.forEach(function(ev) { %>
+          <% var exitEvDesc = (allEvents.find(function(e){ return e.name === ev.name; }) || {}).description || ''; %>
+          <tr>
+            <td class="col-id"><%= ev.id %></td>
+            <td><%= ev.name %></td>
+            <td><%= exitEvDesc %></td>
+            <td class="col-actions">
+              <form action="/customer-segments/<%= segment.id %>/exit-events/<%= ev.id %>?_method=DELETE" method="POST" style="display:inline;">
+                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Remove this exit event?')">Remove</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      <% } %>
+    </tbody>
+  </table>
+</div>
+
+<!-- ── Email Series ─────────────────────────────────────── -->
+<div class="section-header">
+  <h2 class="section-title">Email Series</h2>
+  <button class="btn btn-primary btn-sm" onclick="openModal('assignSeriesModal')">+ Assign Email Series</button>
+</div>
+<div class="card" style="margin-bottom:1.5rem;">
+  <table>
+    <thead>
+      <tr>
+        <th class="col-id">#</th>
+        <th>Name</th>
+        <th>Description</th>
+        <th class="col-actions">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (segment.emailSeries.length === 0) { %>
+        <tr>
+          <td colspan="4" class="empty-row">No email series assigned. <a href="#" onclick="openModal('assignSeriesModal');return false;">Assign one</a>.</td>
+        </tr>
+      <% } else { %>
+        <% segment.emailSeries.forEach(function(series) { %>
+          <tr>
+            <td class="col-id"><%= series.id %></td>
+            <td><a href="/email-series/<%= series.id %>"><%= series.name %></a></td>
+            <td><%= series.description %></td>
+            <td class="col-actions">
+              <form action="/customer-segments/<%= segment.id %>/email-series/<%= series.id %>?_method=DELETE" method="POST" style="display:inline;">
+                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Unassign this email series?')">Unassign</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      <% } %>
+    </tbody>
+  </table>
+</div>
+
+<!-- ── Queries ───────────────────────────────────────────── -->
+<div class="section-header">
+  <h2 class="section-title">Queries</h2>
+  <button class="btn btn-primary btn-sm" onclick="openModal('newQueryModal')">+ Add Query</button>
+</div>
+<div class="card" style="margin-bottom:1.5rem;">
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Query</th>
+        <th class="col-actions">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (segment.query.length === 0) { %>
+        <tr>
+          <td colspan="3" class="empty-row">No queries. <a href="#" onclick="openModal('newQueryModal');return false;">Add one</a>.</td>
+        </tr>
+      <% } else { %>
+        <% segment.query.forEach(function(q) { %>
+          <tr>
+            <td><%= q.name %></td>
+            <td style="white-space:pre-wrap;word-break:break-word;"><%= q.query %></td>
+            <td class="col-actions">
+              <button class="btn btn-sm btn-secondary" onclick="openEditQueryModal(<%= q.id %>, <%= JSON.stringify(q.name) %>, <%= JSON.stringify(q.query) %>)">Edit</button>
+              <form action="/customer-segments/<%= segment.id %>/queries/<%= q.id %>?_method=DELETE" method="POST" style="display:inline;">
+                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this query?')">Delete</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      <% } %>
+    </tbody>
+  </table>
+</div>
+
+<!-- New Query Modal -->
+<div class="modal-backdrop" id="newQueryModal" onclick="closeModal('newQueryModal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Add Query</h2>
+      <button class="modal-close" onclick="closeModal('newQueryModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="newQueryErrors" class="flash flash-error" style="display:none;"></div>
+      <form id="newQueryForm" onsubmit="submitNewQuery(event)">
+        <div class="form-group">
+          <label for="newQueryName">Name</label>
+          <input type="text" id="newQueryName" name="name">
+        </div>
+        <div class="form-group">
+          <label for="newQueryText">Query</label>
+          <textarea id="newQueryText" name="query" rows="6" style="width:100%;resize:vertical;"></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Add Query</button>
+          <button type="button" class="btn btn-ghost" onclick="closeModal('newQueryModal')">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Query Modal -->
+<div class="modal-backdrop" id="editQueryModal" onclick="closeModal('editQueryModal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Edit Query</h2>
+      <button class="modal-close" onclick="closeModal('editQueryModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="editQueryErrors" class="flash flash-error" style="display:none;"></div>
+      <form id="editQueryForm" onsubmit="submitEditQuery(event)">
+        <input type="hidden" id="editQueryId" value="">
+        <div class="form-group">
+          <label for="editQueryName">Name</label>
+          <input type="text" id="editQueryName" name="name">
+        </div>
+        <div class="form-group">
+          <label for="editQueryText">Query</label>
+          <textarea id="editQueryText" name="query" rows="6" style="width:100%;resize:vertical;"></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+          <button type="button" class="btn btn-ghost" onclick="closeModal('editQueryModal')">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- New Entry Event Modal -->
+<div class="modal-backdrop" id="newEntryModal" onclick="closeModal('newEntryModal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Add Entry Event</h2>
+      <button class="modal-close" onclick="closeModal('newEntryModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="entryErrors" class="flash flash-error" style="display:none;"></div>
+      <form id="entryForm" onsubmit="submitEntryEvent(event)">
+        <div class="form-group">
+          <label for="entryEventSelect">Event</label>
+          <select id="entryEventSelect" name="eventId">
+            <option value="">— Select an event —</option>
+            <% allEvents.forEach(function(ev) { %>
+              <% var alreadyEntry = segment.entryEvents.some(function(e) { return e.name === ev.name; }); %>
+              <% if (!alreadyEntry) { %>
+                <option value="<%= ev.id %>"><%= ev.name %></option>
+              <% } %>
+            <% }) %>
+          </select>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Add Entry Event</button>
+          <button type="button" class="btn btn-ghost" onclick="closeModal('newEntryModal')">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- New Exit Event Modal -->
+<div class="modal-backdrop" id="newExitModal" onclick="closeModal('newExitModal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Add Exit Event</h2>
+      <button class="modal-close" onclick="closeModal('newExitModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="exitErrors" class="flash flash-error" style="display:none;"></div>
+      <form id="exitForm" onsubmit="submitExitEvent(event)">
+        <div class="form-group">
+          <label for="exitEventSelect">Event</label>
+          <select id="exitEventSelect" name="eventId">
+            <option value="">— Select an event —</option>
+            <% allEvents.forEach(function(ev) { %>
+              <% var alreadyExit = segment.exitEvents.some(function(e) { return e.name === ev.name; }); %>
+              <% if (!alreadyExit) { %>
+                <option value="<%= ev.id %>"><%= ev.name %></option>
+              <% } %>
+            <% }) %>
+          </select>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Add Exit Event</button>
+          <button type="button" class="btn btn-ghost" onclick="closeModal('newExitModal')">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Assign Email Series Modal -->
+<div class="modal-backdrop" id="assignSeriesModal" onclick="closeModal('assignSeriesModal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Assign Email Series</h2>
+      <button class="modal-close" onclick="closeModal('assignSeriesModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="seriesErrors" class="flash flash-error" style="display:none;"></div>
+      <form id="seriesForm" onsubmit="submitAssignSeries(event)">
+        <div class="form-group">
+          <label for="seriesSelect">Email Series</label>
+          <select id="seriesSelect" name="emailSeriesId">
+            <option value="">— Select an email series —</option>
+            <% allEmailSeries.forEach(function(s) { %>
+              <% var alreadyAssigned = segment.emailSeries.some(function(es) { return es.id === s.id; }); %>
+              <% if (!alreadyAssigned) { %>
+                <option value="<%= s.id %>"><%= s.name %></option>
+              <% } %>
+            <% }) %>
+          </select>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Assign</button>
+          <button type="button" class="btn btn-ghost" onclick="closeModal('assignSeriesModal')">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  var segmentId = <%= segment.id %>;
+
+  function openModal(id) {
+    document.getElementById(id).classList.add('active');
+    var sel = document.querySelector('#' + id + ' select');
+    if (sel) sel.value = '';
+    var errBox = document.querySelector('#' + id + ' .flash-error');
+    if (errBox) errBox.style.display = 'none';
+  }
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('active');
+  }
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      ['newEntryModal','newExitModal','assignSeriesModal','newQueryModal','editQueryModal'].forEach(closeModal);
+    }
+  });
+
+  async function submitEntryEvent(e) {
+    e.preventDefault();
+    const eventId = document.getElementById('entryEventSelect').value;
+    const errBox = document.getElementById('entryErrors');
+    const res = await fetch('/customer-segments/' + segmentId + '/entry-events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      body: JSON.stringify({ eventId })
+    });
+    if (res.ok) {
+      closeModal('newEntryModal');
+      showToast('Entry event added.', 'success');
+      setTimeout(function() { window.location.reload(); }, 600);
+    } else {
+      const data = await res.json();
+      errBox.textContent = data.errors.join(' ');
+      errBox.style.display = 'block';
+    }
+  }
+
+  async function submitExitEvent(e) {
+    e.preventDefault();
+    const eventId = document.getElementById('exitEventSelect').value;
+    const errBox = document.getElementById('exitErrors');
+    const res = await fetch('/customer-segments/' + segmentId + '/exit-events', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      body: JSON.stringify({ eventId })
+    });
+    if (res.ok) {
+      closeModal('newExitModal');
+      showToast('Exit event added.', 'success');
+      setTimeout(function() { window.location.reload(); }, 600);
+    } else {
+      const data = await res.json();
+      errBox.textContent = data.errors.join(' ');
+      errBox.style.display = 'block';
+    }
+  }
+
+  function openEditQueryModal(id, name, text) {
+    document.getElementById('editQueryId').value = id;
+    document.getElementById('editQueryName').value = name;
+    document.getElementById('editQueryText').value = text;
+    var errBox = document.getElementById('editQueryErrors');
+    if (errBox) errBox.style.display = 'none';
+    document.getElementById('editQueryModal').classList.add('active');
+  }
+
+  async function submitNewQuery(e) {
+    e.preventDefault();
+    const name = document.getElementById('newQueryName').value;
+    const query = document.getElementById('newQueryText').value;
+    const errBox = document.getElementById('newQueryErrors');
+    const res = await fetch('/customer-segments/' + segmentId + '/queries', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      body: JSON.stringify({ name, query })
+    });
+    if (res.ok) {
+      closeModal('newQueryModal');
+      showToast('Query added.', 'success');
+      setTimeout(function() { window.location.reload(); }, 600);
+    } else {
+      const data = await res.json();
+      errBox.textContent = data.errors.join(' ');
+      errBox.style.display = 'block';
+    }
+  }
+
+  async function submitEditQuery(e) {
+    e.preventDefault();
+    const queryId = document.getElementById('editQueryId').value;
+    const name = document.getElementById('editQueryName').value;
+    const query = document.getElementById('editQueryText').value;
+    const errBox = document.getElementById('editQueryErrors');
+    const res = await fetch('/customer-segments/' + segmentId + '/queries/' + queryId, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      body: JSON.stringify({ name, query })
+    });
+    if (res.ok) {
+      closeModal('editQueryModal');
+      showToast('Query updated.', 'success');
+      setTimeout(function() { window.location.reload(); }, 600);
+    } else {
+      const data = await res.json();
+      errBox.textContent = data.errors.join(' ');
+      errBox.style.display = 'block';
+    }
+  }
+
+  async function submitAssignSeries(e) {
+    e.preventDefault();
+    const emailSeriesId = document.getElementById('seriesSelect').value;
+    const errBox = document.getElementById('seriesErrors');
+    const res = await fetch('/customer-segments/' + segmentId + '/email-series', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      body: JSON.stringify({ emailSeriesId })
+    });
+    if (res.ok) {
+      closeModal('assignSeriesModal');
+      showToast('Email series assigned.', 'success');
+      setTimeout(function() { window.location.reload(); }, 600);
+    } else {
+      const data = await res.json();
+      errBox.textContent = data.errors.join(' ');
+      errBox.style.display = 'block';
+    }
+  }
+</script>

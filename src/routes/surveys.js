@@ -1,0 +1,14 @@
+const express = require('express');
+const router = express.Router();
+const ctrl = require('../controllers/surveysController');
+router.post('/reorder', ctrl.reorder);
+router.get('/', ctrl.index);
+router.post('/', ctrl.create);
+router.put('/:id', ctrl.update);
+router.delete('/:id', ctrl.destroy);
+router.get('/:id', ctrl.show);
+router.post('/:id/questions', ctrl.createQuestion);
+router.put('/:id/questions/:questionId', ctrl.updateQuestion);
+router.delete('/:id/questions/:questionId', ctrl.destroyQuestion);
+router.post('/:id/questions/reorder', ctrl.reorderQuestions);
+module.exports = router;

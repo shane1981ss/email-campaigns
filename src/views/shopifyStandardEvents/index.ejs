@@ -1,0 +1,27 @@
+<div class="page-header">
+  <h1>Shopify Standard Events</h1>
+  <a href="https://shopify.dev/docs/api/web-pixels-api/standard-events" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">View Shopify Docs</a>
+</div>
+
+<div class="card">
+  <table>
+    <thead>
+      <tr>
+        <th>Event Name</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (events.length === 0) { %>
+        <tr>
+          <td colspan="1" class="empty-row">No events found.</td>
+        </tr>
+      <% } else { %>
+        <% events.forEach(function(event) { %>
+          <tr>
+            <td><%= event %></td>
+          </tr>
+        <% }) %>
+      <% } %>
+    </tbody>
+  </table>
+</div>

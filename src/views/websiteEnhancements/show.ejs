@@ -1,0 +1,211 @@
+<div class="page-header">
+  <div>
+    <a href="/website-enhancements" class="breadcrumb-link">&larr; Website Enhancements</a>
+    <h1><%= enhancement.name %></h1>
+    <% if (enhancement.description) { %>
+      <p class="page-subtitle"><%= enhancement.description %></p>
+    <% } %>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+  function showToast(message, type) {
+    type = type || 'success';
+    var container = document.getElementById('toast-container');
+    var toast = document.createElement('div');
+    toast.className = 'toast toast-' + type;
+    toast.innerHTML = '<span>' + message + '</span><button class="toast-dismiss" onclick="dismissToast(this)">&times;</button>';
+    container.appendChild(toast);
+    setTimeout(function() { dismissToast(toast.querySelector('.toast-dismiss')); }, 4000);
+  }
+  function dismissToast(btn) {
+    var toast = btn.closest('.toast');
+    if (!toast) return;
+    toast.style.animation = 'toastOut 0.2s ease forwards';
+    setTimeout(function() { toast.remove(); }, 200);
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    var tc = document.getElementById('toast-container');
+    if (tc) document.body.appendChild(tc);
+
+    ['newTaskModal','editTaskModal'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) document.body.appendChild(el);
+    });
+
+    <% if (messages.success && messages.success.length) { %>
+      showToast('<%= messages.success.toString().replace(/'/g, "\\'") %>', 'success');
+    <% } %>
+
+    var tbody = document.getElementById('tasks-tbody');
+    if (tbody && typeof Sortable !== 'undefined') {
+      Sortable.create(tbody, {
+        handle: '.drag-handle',
+        animation: 150,
+        onEnd: function() {
+          var ids = Array.from(tbody.querySelectorAll('tr[data-id]')).map(function(r) { return r.dataset.id; });
+          fetch('/website-enhancements/tasks/<%= enhancement.id %>/reorder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: JSON.stringify({ ids: ids })
+          });
+        }
+      });
+    }
+  });
+
+  function openModal(id) {
+    var el = document.getElementById(id);
+    if (el) { el.style.display = 'flex'; }
+  }
+
+  function closeModal(id) {
+    var el = document.getElementById(id);
+    if (el) { el.style.display = 'none'; }
+    document.getElementById('newTaskErrors') && (document.getElementById('newTaskErrors').style.display = 'none');
+    document.getElementById('editTaskErrors') && (document.getElementById('editTaskErrors').style.display = 'none');
+  }
+
+  function openNewTaskModal() {
+    document.getElementById('newTaskName').value = '';
+    openModal('newTaskModal');
+  }
+
+  function openEditTaskModal(btn) {
+    document.getElementById('editTaskId').value = btn.dataset.id;
+    document.getElementById('editTaskName').value = decodeURIComponent(btn.dataset.name || '');
+    openModal('editTaskModal');
+  }
+
+  function submitNewTask(e) {
+    e.preventDefault();
+    var name = document.getElementById('newTaskName').value;
+    var errEl = document.getElementById('newTaskErrors');
+    fetch('/website-enhancements/tasks/<%= enhancement.id %>', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      body: JSON.stringify({ name: name })
+    }).then(function(r) { return r.json(); }).then(function(data) {
+      if (data.errors) {
+        errEl.textContent = data.errors.join(' ');
+        errEl.style.display = 'block';
+      } else {
+        closeModal('newTaskModal');
+        location.reload();
+      }
+    });
+  }
+
+  function submitEditTask(e) {
+    e.preventDefault();
+    var id = document.getElementById('editTaskId').value;
+    var name = document.getElementById('editTaskName').value;
+    var errEl = document.getElementById('editTaskErrors');
+    fetch('/website-enhancements/tasks/<%= enhancement.id %>/' + id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      body: JSON.stringify({ name: name })
+    }).then(function(r) { return r.json(); }).then(function(data) {
+      if (data.errors) {
+        errEl.textContent = data.errors.join(' ');
+        errEl.style.display = 'block';
+      } else {
+        closeModal('editTaskModal');
+        location.reload();
+      }
+    });
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') { closeModal('newTaskModal'); closeModal('editTaskModal'); }
+  });
+</script>
+
+<div class="section-header">
+  <span class="section-title">Tasks</span>
+  <button class="btn btn-primary btn-sm" onclick="openNewTaskModal()">+ New Task</button>
+</div>
+
+<div class="card">
+  <table>
+    <thead>
+      <tr>
+        <th class="col-drag"></th>
+        <th>Name</th>
+        <th class="col-actions">Actions</th>
+      </tr>
+    </thead>
+    <tbody id="tasks-tbody">
+      <% if (enhancement.tasks.length === 0) { %>
+        <tr>
+          <td colspan="3" class="empty-row">No tasks yet. <a href="#" onclick="openNewTaskModal();return false;">Create one</a>.</td>
+        </tr>
+      <% } else { %>
+        <% enhancement.tasks.forEach(function(task) { %>
+          <tr data-id="<%= task.id %>">
+            <td class="col-drag drag-handle">&#9776;</td>
+            <td><%= task.name %></td>
+            <td class="col-actions">
+              <button class="btn btn-sm btn-secondary"
+                data-id="<%= task.id %>"
+                data-name="<%= encodeURIComponent(task.name || '') %>"
+                onclick="openEditTaskModal(this)">Edit</button>
+              <form action="/website-enhancements/tasks/<%= enhancement.id %>/<%= task.id %>?_method=DELETE" method="POST" style="display:inline;">
+                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this task?')">Delete</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      <% } %>
+    </tbody>
+  </table>
+</div>
+
+<!-- New Task Modal -->
+<div id="newTaskModal" class="modal-backdrop" onclick="closeModal('newTaskModal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2>New Task</h2>
+      <button class="modal-close" onclick="closeModal('newTaskModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="newTaskErrors" class="flash flash-error" style="display:none;"></div>
+      <form id="newTaskForm" onsubmit="submitNewTask(event)">
+        <div class="form-group">
+          <label for="newTaskName">Name</label>
+          <input type="text" id="newTaskName" class="form-control" placeholder="Task name" />
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Save</button>
+          <button type="button" class="btn btn-secondary" onclick="closeModal('newTaskModal')">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Task Modal -->
+<div id="editTaskModal" class="modal-backdrop" onclick="closeModal('editTaskModal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Edit Task</h2>
+      <button class="modal-close" onclick="closeModal('editTaskModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="editTaskErrors" class="flash flash-error" style="display:none;"></div>
+      <form id="editTaskForm" onsubmit="submitEditTask(event)">
+        <input type="hidden" id="editTaskId" />
+        <div class="form-group">
+          <label for="editTaskName">Name</label>
+          <input type="text" id="editTaskName" class="form-control" placeholder="Task name" />
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Save</button>
+          <button type="button" class="btn btn-secondary" onclick="closeModal('editTaskModal')">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

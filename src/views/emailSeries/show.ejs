@@ -1,0 +1,231 @@
+<div class="page-header">
+  <div>
+    <a href="/email-series" class="breadcrumb-link">&larr; Email Series</a>
+    <h1><%= series.name %></h1>
+    <% if (series.description) { %>
+      <p class="page-subtitle"><%= series.description %></p>
+    <% } %>
+  </div>
+  <button class="btn btn-primary" onclick="openNewModal()">+ New Email</button>
+</div>
+
+<div class="card">
+  <table>
+    <thead>
+      <tr>
+        <th class="col-id">#</th>
+        <th>Name</th>
+        <th>Subject</th>
+        <th>Description</th>
+        <th class="col-actions">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (series.emails.length === 0) { %>
+        <tr>
+          <td colspan="5" class="empty-row">No emails in this series yet. <a href="#" onclick="openNewModal();return false;">Create one</a>.</td>
+        </tr>
+      <% } else { %>
+        <% series.emails.forEach(function(email) { %>
+          <tr>
+            <td class="col-id"><%= email.id %></td>
+            <td><%= email.name %></td>
+            <td><%= email.subject %></td>
+            <td><%= email.description %></td>
+            <td class="col-actions">
+              <button class="btn btn-sm btn-secondary"
+                data-id="<%= email.id %>"
+                data-name="<%= encodeURIComponent(email.name || '') %>"
+                data-subject="<%= encodeURIComponent(email.subject || '') %>"
+                data-description="<%= encodeURIComponent(email.description || '') %>"
+                onclick="openEditModal(this)">Edit</button>
+              <form action="/emails/<%= email.id %>?_method=DELETE" method="POST" style="display:inline;">
+                <input type="hidden" name="emailSeriesId" value="<%= series.id %>">
+                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this email?')">Delete</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      <% } %>
+    </tbody>
+  </table>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+  function showToast(message, type) {
+    type = type || 'success';
+    var container = document.getElementById('toast-container');
+    var toast = document.createElement('div');
+    toast.className = 'toast toast-' + type;
+    toast.innerHTML = '<span>' + message + '</span><button class="toast-dismiss" onclick="dismissToast(this)">&times;</button>';
+    container.appendChild(toast);
+    setTimeout(function() { dismissToast(toast.querySelector('.toast-dismiss')); }, 4000);
+  }
+  function dismissToast(btn) {
+    var toast = btn.closest('.toast');
+    if (!toast) return;
+    toast.style.animation = 'toastOut 0.2s ease forwards';
+    setTimeout(function() { toast.remove(); }, 200);
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    ['newModal','editModal','toast-container'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) document.body.appendChild(el);
+    });
+    <% if (messages.success && messages.success.length) { %>
+      showToast('<%= messages.success.toString().replace(/'/g, "\\'") %>', 'success');
+    <% } %>
+  });
+</script>
+
+<!-- New Email Modal -->
+<div class="modal-backdrop" id="newModal" onclick="closeModal('newModal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2>New Email</h2>
+      <button class="modal-close" onclick="closeModal('newModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="newErrors" class="flash flash-error" style="display:none;"></div>
+      <form id="newForm" onsubmit="submitNew(event)">
+        <div class="form-group">
+          <label for="newName">Name</label>
+          <input type="text" id="newName" name="name" placeholder="Email name" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="newSubject">Subject</label>
+          <input type="text" id="newSubject" name="subject" placeholder="Email subject" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="newDescription">Description</label>
+          <textarea id="newDescription" name="description" rows="3" placeholder="Description"></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Create Email</button>
+          <button type="button" class="btn btn-ghost" onclick="closeModal('newModal')">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Email Modal -->
+<div class="modal-backdrop" id="editModal" onclick="closeModal('editModal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Edit Email</h2>
+      <button class="modal-close" onclick="closeModal('editModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="editErrors" class="flash flash-error" style="display:none;"></div>
+      <form id="editForm" onsubmit="submitEdit(event)">
+        <input type="hidden" id="editId">
+        <div class="form-group">
+          <label for="editName">Name</label>
+          <input type="text" id="editName" name="name" placeholder="Email name" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="editSubject">Subject</label>
+          <input type="text" id="editSubject" name="subject" placeholder="Email subject" autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label for="editDescription">Description</label>
+          <textarea id="editDescription" name="description" rows="3" placeholder="Description"></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+          <button type="button" class="btn btn-ghost" onclick="closeModal('editModal')">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  var seriesId = <%= series.id %>;
+
+  function openNewModal() {
+    document.getElementById('newName').value = '';
+    document.getElementById('newSubject').value = '';
+    document.getElementById('newDescription').value = '';
+    document.getElementById('newErrors').style.display = 'none';
+    document.getElementById('newModal').classList.add('active');
+    document.getElementById('newName').focus();
+  }
+
+  function openEditModal(btn) {
+    const id = btn.dataset.id;
+    const name = decodeURIComponent(btn.dataset.name);
+    const subject = decodeURIComponent(btn.dataset.subject);
+    const description = decodeURIComponent(btn.dataset.description);
+    document.getElementById('editId').value = id;
+    document.getElementById('editName').value = name;
+    document.getElementById('editSubject').value = subject;
+    document.getElementById('editDescription').value = description;
+    document.getElementById('editErrors').style.display = 'none';
+    document.getElementById('editModal').classList.add('active');
+    document.getElementById('editName').focus();
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('active');
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeModal('newModal');
+      closeModal('editModal');
+    }
+  });
+
+  async function submitNew(e) {
+    e.preventDefault();
+    const name = document.getElementById('newName').value;
+    const subject = document.getElementById('newSubject').value;
+    const description = document.getElementById('newDescription').value;
+    const errBox = document.getElementById('newErrors');
+
+    const res = await fetch('/emails', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      body: JSON.stringify({ name, subject, description, emailSeriesId: seriesId })
+    });
+
+    if (res.ok) {
+      closeModal('newModal');
+      showToast('Email created successfully.', 'success');
+      setTimeout(function() { window.location.reload(); }, 600);
+    } else {
+      const data = await res.json();
+      errBox.textContent = data.errors.join(' ');
+      errBox.style.display = 'block';
+    }
+  }
+
+  async function submitEdit(e) {
+    e.preventDefault();
+    const id = document.getElementById('editId').value;
+    const name = document.getElementById('editName').value;
+    const subject = document.getElementById('editSubject').value;
+    const description = document.getElementById('editDescription').value;
+    const errBox = document.getElementById('editErrors');
+
+    const res = await fetch('/emails/' + id + '?_method=PUT', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      body: JSON.stringify({ name, subject, description })
+    });
+
+    if (res.ok) {
+      closeModal('editModal');
+      showToast('Email updated successfully.', 'success');
+      setTimeout(function() { window.location.reload(); }, 600);
+    } else {
+      const data = await res.json();
+      errBox.textContent = data.errors.join(' ');
+      errBox.style.display = 'block';
+    }
+  }
+</script>

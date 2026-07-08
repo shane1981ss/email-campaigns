@@ -1,0 +1,212 @@
+<div class="page-header">
+  <div>
+    <a href="/surveys" class="breadcrumb-link">&larr; Surveys</a>
+    <h1><%= survey.name %></h1>
+    <% if (survey.description) { %>
+      <p class="page-subtitle"><%= survey.description %></p>
+    <% } %>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+  function showToast(message, type) {
+    type = type || 'success';
+    var container = document.getElementById('toast-container');
+    var toast = document.createElement('div');
+    toast.className = 'toast toast-' + type;
+    toast.innerHTML = '<span>' + message + '</span><button class="toast-dismiss" onclick="dismissToast(this)">&times;</button>';
+    container.appendChild(toast);
+    setTimeout(function() { dismissToast(toast.querySelector('.toast-dismiss')); }, 4000);
+  }
+  function dismissToast(btn) {
+    var toast = btn.closest('.toast');
+    if (!toast) return;
+    toast.style.animation = 'toastOut 0.2s ease forwards';
+    setTimeout(function() { toast.remove(); }, 200);
+  }
+  document.addEventListener('DOMContentLoaded', function() {
+    var tc = document.getElementById('toast-container');
+    if (tc) document.body.appendChild(tc);
+    <% if (messages.success && messages.success.length) { %>
+      showToast('<%= messages.success.toString().replace(/'/g, "\\'") %>', 'success');
+    <% } %>
+  });
+
+  function openModal(id) {
+    var el = document.getElementById(id);
+    if (el) { el.style.display = 'flex'; }
+  }
+
+  function closeModal(id) {
+    var el = document.getElementById(id);
+    if (el) { el.style.display = 'none'; }
+    document.getElementById('newQuestionErrors') && (document.getElementById('newQuestionErrors').style.display = 'none');
+    document.getElementById('editQuestionErrors') && (document.getElementById('editQuestionErrors').style.display = 'none');
+  }
+
+  function openNewQuestionModal() {
+    document.getElementById('newQuestionText').value = '';
+    openModal('newQuestionModal');
+  }
+
+  function openEditQuestionModal(btn) {
+    document.getElementById('editQuestionId').value = btn.dataset.id;
+    document.getElementById('editQuestionText').value = decodeURIComponent(btn.dataset.question || '');
+    openModal('editQuestionModal');
+  }
+
+  function submitNewQuestion(e) {
+    e.preventDefault();
+    var question = document.getElementById('newQuestionText').value;
+    var errEl = document.getElementById('newQuestionErrors');
+    fetch('/surveys/<%= survey.id %>/questions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      body: JSON.stringify({ question: question })
+    }).then(function(r) { return r.json(); }).then(function(data) {
+      if (data.errors) {
+        errEl.textContent = data.errors.join(' ');
+        errEl.style.display = 'block';
+      } else {
+        closeModal('newQuestionModal');
+        location.reload();
+      }
+    });
+  }
+
+  function submitEditQuestion(e) {
+    e.preventDefault();
+    var id = document.getElementById('editQuestionId').value;
+    var question = document.getElementById('editQuestionText').value;
+    var errEl = document.getElementById('editQuestionErrors');
+    fetch('/surveys/<%= survey.id %>/questions/' + id, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      body: JSON.stringify({ question: question })
+    }).then(function(r) { return r.json(); }).then(function(data) {
+      if (data.errors) {
+        errEl.textContent = data.errors.join(' ');
+        errEl.style.display = 'block';
+      } else {
+        closeModal('editQuestionModal');
+        location.reload();
+      }
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    ['newQuestionModal','editQuestionModal'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) document.body.appendChild(el);
+    });
+
+    var tbody = document.getElementById('questions-tbody');
+    if (tbody && typeof Sortable !== 'undefined') {
+      Sortable.create(tbody, {
+        handle: '.drag-handle',
+        animation: 150,
+        onEnd: function() {
+          var ids = Array.from(tbody.querySelectorAll('tr[data-id]')).map(function(r) { return r.dataset.id; });
+          fetch('/surveys/<%= survey.id %>/questions/reorder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: JSON.stringify({ ids: ids })
+          });
+        }
+      });
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') { closeModal('newQuestionModal'); closeModal('editQuestionModal'); }
+    });
+  });
+</script>
+
+<!-- ── Questions ─────────────────────────────────────── -->
+<div class="section-header">
+  <h2 class="section-title">Questions</h2>
+  <button class="btn btn-primary btn-sm" onclick="openNewQuestionModal()">+ New Question</button>
+</div>
+<div class="card" style="margin-bottom:1.5rem;">
+  <table>
+    <thead>
+      <tr>
+        <th class="col-drag"></th>
+        <th>Question</th>
+        <th class="col-actions">Actions</th>
+      </tr>
+    </thead>
+    <tbody id="questions-tbody">
+      <% if (survey.questions.length === 0) { %>
+        <tr id="empty-row">
+          <td colspan="3" class="empty-row">No questions yet. <a href="#" onclick="openNewQuestionModal();return false;">Add one</a>.</td>
+        </tr>
+      <% } else { %>
+        <% survey.questions.forEach(function(q) { %>
+          <tr data-id="<%= q.id %>">
+            <td class="col-drag drag-handle">&#9776;</td>
+            <td><%= q.question %></td>
+            <td class="col-actions">
+              <button class="btn btn-sm btn-secondary"
+                data-id="<%= q.id %>"
+                data-question="<%= encodeURIComponent(q.question || '') %>"
+                onclick="openEditQuestionModal(this)">Edit</button>
+              <form action="/surveys/<%= survey.id %>/questions/<%= q.id %>?_method=DELETE" method="POST" style="display:inline;">
+                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this question?')">Delete</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      <% } %>
+    </tbody>
+  </table>
+</div>
+
+<!-- New Question Modal -->
+<div class="modal-backdrop" id="newQuestionModal" onclick="closeModal('newQuestionModal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2>New Question</h2>
+      <button class="modal-close" onclick="closeModal('newQuestionModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="newQuestionErrors" class="flash flash-error" style="display:none;"></div>
+      <form id="newQuestionForm" onsubmit="submitNewQuestion(event)">
+        <div class="form-group">
+          <label for="newQuestionText">Question</label>
+          <textarea id="newQuestionText" name="question" rows="3" placeholder="Enter question text"></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Save</button>
+          <button type="button" class="btn btn-secondary" onclick="closeModal('newQuestionModal')">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Question Modal -->
+<div class="modal-backdrop" id="editQuestionModal" onclick="closeModal('editQuestionModal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Edit Question</h2>
+      <button class="modal-close" onclick="closeModal('editQuestionModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="editQuestionErrors" class="flash flash-error" style="display:none;"></div>
+      <form id="editQuestionForm" onsubmit="submitEditQuestion(event)">
+        <input type="hidden" id="editQuestionId">
+        <div class="form-group">
+          <label for="editQuestionText">Question</label>
+          <textarea id="editQuestionText" name="question" rows="3" placeholder="Enter question text"></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Save</button>
+          <button type="button" class="btn btn-secondary" onclick="closeModal('editQuestionModal')">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

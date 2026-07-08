@@ -1,0 +1,211 @@
+<div class="page-header">
+  <h1>Questions</h1>
+  <button class="btn btn-primary" onclick="openNewModal()">+ New Question</button>
+</div>
+
+<div class="card">
+  <table>
+    <thead>
+      <tr>
+        <th class="col-drag"></th>
+        <th>Question</th>
+        <th class="col-actions">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (questions.length === 0) { %>
+        <tr>
+          <td colspan="3" class="empty-row">No questions found. <a href="#" onclick="openNewModal();return false;">Create one</a>.</td>
+        </tr>
+      <% } else { %>
+        <% questions.forEach(item => { %>
+          <tr data-id="<%= item.id %>">
+            <td class="col-drag drag-handle">&#9776;</td>
+            <td><%= item.text %></td>
+            <td class="col-actions">
+              <button class="btn btn-sm btn-secondary"
+                data-id="<%= item.id %>"
+                data-text="<%= encodeURIComponent(item.text || '') %>"
+                onclick="openEditModal(this)">Edit</button>
+              <form action="/questions/<%= item.id %>?_method=DELETE" method="POST" style="display:inline;">
+                <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Delete this question?')">Delete</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      <% } %>
+    </tbody>
+  </table>
+</div>
+
+<div id="toast-container"></div>
+
+<script>
+  function showToast(message, type) {
+    type = type || 'success';
+    var container = document.getElementById('toast-container');
+    var toast = document.createElement('div');
+    toast.className = 'toast toast-' + type;
+    toast.innerHTML = '<span>' + message + '</span><button class="toast-dismiss" onclick="dismissToast(this)">&times;</button>';
+    container.appendChild(toast);
+    setTimeout(function() { dismissToast(toast.querySelector('.toast-dismiss')); }, 4000);
+  }
+
+  function dismissToast(btn) {
+    var toast = btn.closest('.toast');
+    if (!toast) return;
+    toast.style.animation = 'toastOut 0.2s ease forwards';
+    setTimeout(function() { toast.remove(); }, 200);
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    var tbody = document.querySelector('table tbody');
+    if (tbody && typeof Sortable !== 'undefined') {
+      Sortable.create(tbody, {
+        handle: '.drag-handle',
+        animation: 150,
+        onEnd: function() {
+          var ids = Array.from(tbody.querySelectorAll('tr[data-id]')).map(function(r) { return r.dataset.id; });
+          fetch('/questions/reorder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: JSON.stringify({ ids: ids })
+          });
+        }
+      });
+    }
+  });
+
+  document.addEventListener('DOMContentLoaded', function() {
+    ['newModal','editModal','toast-container'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) document.body.appendChild(el);
+    });
+
+    <% if (messages.success && messages.success.length) { %>
+      showToast('<%= messages.success.toString().replace(/'/g, "\\'") %>', 'success');
+    <% } %>
+  });
+</script>
+
+<!-- New Question Modal -->
+<div class="modal-backdrop" id="newModal" onclick="closeModal('newModal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2>New Question</h2>
+      <button class="modal-close" onclick="closeModal('newModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="newErrors" class="flash flash-error" style="display:none;"></div>
+      <form id="newForm" onsubmit="submitNew(event)">
+        <div class="form-group">
+          <label for="newText">Question</label>
+          <textarea id="newText" name="text" rows="3" placeholder="Enter question text" autocomplete="off"></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Create Question</button>
+          <button type="button" class="btn btn-ghost" onclick="closeModal('newModal')">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Question Modal -->
+<div class="modal-backdrop" id="editModal" onclick="closeModal('editModal')">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Edit Question</h2>
+      <button class="modal-close" onclick="closeModal('editModal')">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="editErrors" class="flash flash-error" style="display:none;"></div>
+      <form id="editForm" onsubmit="submitEdit(event)">
+        <input type="hidden" id="editId">
+        <div class="form-group">
+          <label for="editText">Question</label>
+          <textarea id="editText" name="text" rows="3" placeholder="Enter question text"></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+          <button type="button" class="btn btn-ghost" onclick="closeModal('editModal')">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  function openNewModal() {
+    document.getElementById('newText').value = '';
+    document.getElementById('newErrors').style.display = 'none';
+    document.getElementById('newModal').classList.add('active');
+    document.getElementById('newText').focus();
+  }
+
+  function openEditModal(btn) {
+    const id = btn.dataset.id;
+    const text = decodeURIComponent(btn.dataset.text);
+    document.getElementById('editId').value = id;
+    document.getElementById('editText').value = text;
+    document.getElementById('editErrors').style.display = 'none';
+    document.getElementById('editModal').classList.add('active');
+    document.getElementById('editText').focus();
+  }
+
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('active');
+  }
+
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeModal('newModal');
+      closeModal('editModal');
+    }
+  });
+
+  async function submitNew(e) {
+    e.preventDefault();
+    const text = document.getElementById('newText').value;
+    const errBox = document.getElementById('newErrors');
+
+    const res = await fetch('/questions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      body: JSON.stringify({ text })
+    });
+
+    if (res.ok) {
+      closeModal('newModal');
+      showToast('Question created successfully.', 'success');
+      setTimeout(function() { window.location.reload(); }, 600);
+    } else {
+      const data = await res.json();
+      errBox.textContent = data.errors.join(' ');
+      errBox.style.display = 'block';
+    }
+  }
+
+  async function submitEdit(e) {
+    e.preventDefault();
+    const id = document.getElementById('editId').value;
+    const text = document.getElementById('editText').value;
+    const errBox = document.getElementById('editErrors');
+
+    const res = await fetch('/questions/' + id + '?_method=PUT', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      body: JSON.stringify({ text })
+    });
+
+    if (res.ok) {
+      closeModal('editModal');
+      showToast('Question updated successfully.', 'success');
+      setTimeout(function() { window.location.reload(); }, 600);
+    } else {
+      const data = await res.json();
+      errBox.textContent = data.errors.join(' ');
+      errBox.style.display = 'block';
+    }
+  }
+</script>
