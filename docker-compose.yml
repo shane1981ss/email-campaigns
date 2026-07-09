@@ -1,0 +1,80 @@
+services:
+  app:
+    build: .
+    container_name: email-campaigns-app
+    environment:
+      - DATABASE_URL=mysql://root:rootpassword@db:3306/email_campaigns
+      - PORT=3000
+      - NODE_ENV=production
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - app-network
+
+  db:
+    image: mysql:8.0
+    container_name: email-campaigns-db
+    restart: always
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: email_campaigns
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+    ports:
+      - "3308:3306" # Mapped to 3308 to avoid conflict with default MySQL
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: email-campaigns-pma
+    restart: always
+    environment:
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: rootpassword
+    ports:
+      - "8085:80" # Mapped to 8085
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+  redis:
+    image: redis:alpine
+    container_name: email-campaigns-redis
+    restart: always
+    ports:
+      - "6381:6379" # Mapped to 6381
+    networks:
+      - app-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: email-campaigns-nginx
+    restart: always
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "8087:80" # Mapped to 8087 to avoid conflict with default HTTP
+    depends_on:
+      - app
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  db_data:
