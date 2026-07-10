@@ -1,7 +1,7 @@
 const express = require('express');
 const path = require('path');
 const session = require('express-session');
-const RedisStore = require('connect-redis').default;
+const { RedisStore } = require('connect-redis');
 const { createClient } = require('redis');
 const flash = require('connect-flash');
 const methodOverride = require('method-override');
