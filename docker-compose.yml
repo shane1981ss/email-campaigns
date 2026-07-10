@@ -3,7 +3,7 @@ services:
     build: .
     container_name: email-campaigns-app
     restart: unless-stopped
-    command: sh -c "npx prisma migrate deploy && npm start"
+    command: sh -c "npx prisma db push && npm start"
     environment:
       DATABASE_URL: mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}
       REDIS_URL: redis://redis:6379

@@ -31,10 +31,10 @@ DATABASE_URL="mysql://USER:PASSWORD@localhost:3306/email_campaigns"
 PORT=3000
 ```
 
-### 3. Run database migrations
+### 3. Initialize the database
 
 ```bash
-npm run db:migrate
+npm run db:push
 ```
 
 ### 4. Start the app
@@ -56,5 +56,6 @@ The app will be available at [http://localhost:3000](http://localhost:3000).
 | `npm start` | Start the server |
 | `npm run dev` | Start with nodemon (auto-reload) |
 | `npm run db:generate` | Regenerate Prisma client |
-| `npm run db:migrate` | Run database migrations |
+| `npm run db:migrate` | Run database migrations (dev) |
+| `npm run db:push` | Sync schema to database (initial setup) |
 | `npm run db:studio` | Open Prisma Studio |
