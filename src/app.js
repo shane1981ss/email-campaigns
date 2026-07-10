@@ -1,6 +1,8 @@
 const express = require('express');
 const path = require('path');
 const session = require('express-session');
+const RedisStore = require('connect-redis').default;
+const { createClient } = require('redis');
 const flash = require('connect-flash');
 const methodOverride = require('method-override');
 const helmet = require('helmet');
@@ -22,6 +24,18 @@ const websiteEnhancementsRouter = require('./routes/websiteEnhancements');
 
 const app = express();
 
+// Initialize redis client.
+const redisClient = createClient({
+  url: process.env.REDIS_URL || 'redis://localhost:6379'
+});
+redisClient.connect().catch(console.error);
+
+// Initialize store.
+const redisStore = new RedisStore({
+  client: redisClient,
+  prefix: "email_campaign:",
+});
+
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
@@ -29,6 +43,7 @@ app.use(methodOverride('_method'));
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 app.use(session({
+  store: redisStore,
   secret: process.env.SESSION_SECRET || 'secret',
   resave: false,
   saveUninitialized: false,
