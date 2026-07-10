@@ -1,4 +1,4 @@
-FROM node:20-slim
+FROM node:24-slim
 
 # Install openssl for Prisma
 RUN apt-get update -y && apt-get install -y openssl
