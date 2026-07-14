@@ -24,6 +24,10 @@ const websiteEnhancementsRouter = require('./routes/websiteEnhancements');
 
 const app = express();
 
+const basePath = process.env.BASE_PATH || '';
+
+app.locals.basePath = basePath;
+
 // Initialize redis client.
 const redisClient = createClient({
   url: process.env.REDIS_URL || 'redis://localhost:6379'
@@ -40,7 +44,7 @@ app.use(helmet({ contentSecurityPolicy: false }));
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 app.use(methodOverride('_method'));
-app.use(express.static(path.join(__dirname, '..', 'public')));
+app.use(basePath, express.static(path.join(__dirname, '..', 'public')));
 
 app.use(session({
   store: redisStore,
@@ -50,26 +54,42 @@ app.use(session({
 }));
 app.use(flash());
 
+app.use((req, res, next) => {
+  res.locals.basePath = basePath;
+  const originalRedirect = res.redirect;
+  res.redirect = function(status, url) {
+    if (typeof status !== 'number') {
+      url = status;
+      status = 302;
+    }
+    if (url && url.startsWith('/')) {
+      return originalRedirect.call(this, status, basePath + url);
+    }
+    return originalRedirect.call(this, status, url);
+  };
+  next();
+});
+
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(expressLayouts);
 app.set('layout', 'layouts/main');
 
-app.use('/events', eventsRouter);
-app.use('/email-series', emailSeriesRouter);
-app.use('/emails', emailsRouter);
-app.use('/customer-segments', customerSegmentsRouter);
-app.use('/shopify-standard-events', shopifyStandardEventsRouter);
-app.use('/shopify-webhook-events', shopifyWebhookEventsRouter);
-app.use('/research', shopifyResearchRouter);
-app.use('/questions', questionsRouter);
-app.use('/surveys', surveysRouter);
-app.use('/profiles', profilesRouter);
-app.use('/subscriptions', subscriptionsRouter);
-app.use('/lists', listsRouter);
-app.use('/website-enhancements', websiteEnhancementsRouter);
+app.use(basePath + '/events', eventsRouter);
+app.use(basePath + '/email-series', emailSeriesRouter);
+app.use(basePath + '/emails', emailsRouter);
+app.use(basePath + '/customer-segments', customerSegmentsRouter);
+app.use(basePath + '/shopify-standard-events', shopifyStandardEventsRouter);
+app.use(basePath + '/shopify-webhook-events', shopifyWebhookEventsRouter);
+app.use(basePath + '/research', shopifyResearchRouter);
+app.use(basePath + '/questions', questionsRouter);
+app.use(basePath + '/surveys', surveysRouter);
+app.use(basePath + '/profiles', profilesRouter);
+app.use(basePath + '/subscriptions', subscriptionsRouter);
+app.use(basePath + '/lists', listsRouter);
+app.use(basePath + '/website-enhancements', websiteEnhancementsRouter);
 
-app.get('/', (req, res) => res.redirect('/events'));
+app.get(basePath + '/', (req, res) => res.redirect(basePath + '/events'));
 
 app.use((req, res) => {
   res.status(404).render('404');

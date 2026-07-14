@@ -17,7 +17,7 @@
     <tbody>
       <% if (emails.length === 0) { %>
         <tr>
-          <td colspan="5" class="empty-row">No emails found. <a href="#" onclick="openNewModal();return false;">Create one</a>.</td>
+          <td colspan="5" class="empty-row">No emails found. <a href="<%= basePath %>#" onclick="openNewModal();return false;">Create one</a>.</td>
         </tr>
       <% } else { %>
         <% emails.forEach(email => { %>

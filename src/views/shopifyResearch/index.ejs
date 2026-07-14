@@ -16,7 +16,7 @@
     <tbody>
       <% if (research.length === 0) { %>
         <tr>
-          <td colspan="4" class="empty-row">No research items found. <a href="#" onclick="openNewModal();return false;">Create one</a>.</td>
+          <td colspan="4" class="empty-row">No research items found. <a href="<%= basePath %>#" onclick="openNewModal();return false;">Create one</a>.</td>
         </tr>
       <% } else { %>
         <% research.forEach(item => { %>

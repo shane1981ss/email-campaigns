@@ -18,14 +18,14 @@
     <tbody>
       <% if (customerSegments.length === 0) { %>
         <tr>
-          <td colspan="6" class="empty-row">No customer segments found. <a href="#" onclick="openNewModal();return false;">Create one</a>.</td>
+          <td colspan="6" class="empty-row">No customer segments found. <a href="<%= basePath %><%= basePath %>#" onclick="openNewModal();return false;">Create one</a>.</td>
         </tr>
       <% } else { %>
         <% customerSegments.forEach(segment => { %>
           <tr data-id="<%= segment.id %>">
             <td class="col-drag drag-handle">&#9776;</td>
             <td>
-              <a href="/customer-segments/<%= segment.id %>"><%= segment.name %></a>
+              <a href="<%= basePath %><%= basePath %>/customer-segments/<%= segment.id %>"><%= segment.name %></a>
               <% if (segment.description) { %>
                 <button class="info-icon-btn" onclick="openDescModal('<%= encodeURIComponent(segment.name) %>', '<%= encodeURIComponent(segment.description) %>')" title="View description">&#9432;</button>
               <% } %>

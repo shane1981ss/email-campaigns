@@ -1,6 +1,6 @@
 <div class="page-header">
   <div>
-    <a href="/surveys" class="breadcrumb-link">&larr; Surveys</a>
+    <a href="<%= basePath %>/surveys" class="breadcrumb-link">&larr; Surveys</a>
     <h1><%= survey.name %></h1>
     <% if (survey.description) { %>
       <p class="page-subtitle"><%= survey.description %></p>
@@ -141,7 +141,7 @@
     <tbody id="questions-tbody">
       <% if (survey.questions.length === 0) { %>
         <tr id="empty-row">
-          <td colspan="3" class="empty-row">No questions yet. <a href="#" onclick="openNewQuestionModal();return false;">Add one</a>.</td>
+          <td colspan="3" class="empty-row">No questions yet. <a href="<%= basePath %>#" onclick="openNewQuestionModal();return false;">Add one</a>.</td>
         </tr>
       <% } else { %>
         <% survey.questions.forEach(function(q) { %>

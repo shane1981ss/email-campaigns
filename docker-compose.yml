@@ -43,7 +43,7 @@ services:
       - app-network
 
   redis:
-    image: redis:8-alpine
+    image: redis:alpine
     container_name: email-campaigns-redis
     restart: unless-stopped
     command: redis-server --appendonly yes

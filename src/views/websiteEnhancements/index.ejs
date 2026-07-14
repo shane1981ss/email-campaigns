@@ -17,13 +17,13 @@
     <tbody>
       <% if (enhancements.length === 0) { %>
         <tr>
-          <td colspan="5" class="empty-row">No enhancements found. <a href="#" onclick="openNewModal();return false;">Create one</a>.</td>
+          <td colspan="5" class="empty-row">No enhancements found. <a href="<%= basePath %>#" onclick="openNewModal();return false;">Create one</a>.</td>
         </tr>
       <% } else { %>
         <% enhancements.forEach(enhancement => { %>
           <tr data-id="<%= enhancement.id %>">
             <td class="col-drag drag-handle">&#9776;</td>
-            <td><a href="/website-enhancements/tasks/<%= enhancement.id %>"><%= enhancement.name %></a></td>
+            <td><a href="<%= basePath %>/website-enhancements/tasks/<%= enhancement.id %>"><%= enhancement.name %></a></td>
             <td><%= enhancement.description %></td>
             <td><%= enhancement._count.tasks %></td>
             <td class="col-actions">

@@ -1,6 +1,6 @@
 <div class="page-header">
   <div>
-    <a href="/customer-segments" class="breadcrumb-link">&larr; Customer Segments</a>
+    <a href="<%= basePath %><%= basePath %>/customer-segments" class="breadcrumb-link">&larr; Customer Segments</a>
     <h1><%= segment.name %></h1>
     <% if (segment.description) { %>
       <p class="page-subtitle"><%= segment.description %></p>
@@ -53,7 +53,7 @@
     <tbody>
       <% if (segment.entryEvents.length === 0) { %>
         <tr>
-          <td colspan="4" class="empty-row">No entry events. <a href="#" onclick="openModal('newEntryModal');return false;">Add one</a>.</td>
+          <td colspan="4" class="empty-row">No entry events. <a href="<%= basePath %><%= basePath %>#" onclick="openModal('newEntryModal');return false;">Add one</a>.</td>
         </tr>
       <% } else { %>
         <% segment.entryEvents.forEach(function(ev) { %>
@@ -92,7 +92,7 @@
     <tbody>
       <% if (segment.exitEvents.length === 0) { %>
         <tr>
-          <td colspan="4" class="empty-row">No exit events. <a href="#" onclick="openModal('newExitModal');return false;">Add one</a>.</td>
+          <td colspan="4" class="empty-row">No exit events. <a href="<%= basePath %><%= basePath %>#" onclick="openModal('newExitModal');return false;">Add one</a>.</td>
         </tr>
       <% } else { %>
         <% segment.exitEvents.forEach(function(ev) { %>
@@ -131,13 +131,13 @@
     <tbody>
       <% if (segment.emailSeries.length === 0) { %>
         <tr>
-          <td colspan="4" class="empty-row">No email series assigned. <a href="#" onclick="openModal('assignSeriesModal');return false;">Assign one</a>.</td>
+          <td colspan="4" class="empty-row">No email series assigned. <a href="<%= basePath %><%= basePath %>#" onclick="openModal('assignSeriesModal');return false;">Assign one</a>.</td>
         </tr>
       <% } else { %>
         <% segment.emailSeries.forEach(function(series) { %>
           <tr>
             <td class="col-id"><%= series.id %></td>
-            <td><a href="/email-series/<%= series.id %>"><%= series.name %></a></td>
+            <td><a href="<%= basePath %><%= basePath %>/email-series/<%= series.id %>"><%= series.name %></a></td>
             <td><%= series.description %></td>
             <td class="col-actions">
               <form action="/customer-segments/<%= segment.id %>/email-series/<%= series.id %>?_method=DELETE" method="POST" style="display:inline;">
@@ -168,7 +168,7 @@
     <tbody>
       <% if (segment.query.length === 0) { %>
         <tr>
-          <td colspan="3" class="empty-row">No queries. <a href="#" onclick="openModal('newQueryModal');return false;">Add one</a>.</td>
+          <td colspan="3" class="empty-row">No queries. <a href="<%= basePath %><%= basePath %>#" onclick="openModal('newQueryModal');return false;">Add one</a>.</td>
         </tr>
       <% } else { %>
         <% segment.query.forEach(function(q) { %>

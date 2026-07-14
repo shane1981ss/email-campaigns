@@ -17,13 +17,13 @@
     <tbody>
       <% if (surveys.length === 0) { %>
         <tr>
-          <td colspan="5" class="empty-row">No surveys found. <a href="#" onclick="openNewModal();return false;">Create one</a>.</td>
+          <td colspan="5" class="empty-row">No surveys found. <a href="<%= basePath %>#" onclick="openNewModal();return false;">Create one</a>.</td>
         </tr>
       <% } else { %>
         <% surveys.forEach(survey => { %>
           <tr data-id="<%= survey.id %>">
             <td class="col-drag drag-handle">&#9776;</td>
-            <td><a href="/surveys/<%= survey.id %>"><%= survey.name %></a></td>
+            <td><a href="<%= basePath %>/surveys/<%= survey.id %>"><%= survey.name %></a></td>
             <td><%= survey.description %></td>
             <td><%= survey._count.questions %></td>
             <td class="col-actions">

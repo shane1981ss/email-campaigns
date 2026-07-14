@@ -1,6 +1,6 @@
 <div class="page-header">
   <div>
-    <a href="/website-enhancements" class="breadcrumb-link">&larr; Website Enhancements</a>
+    <a href="<%= basePath %>/website-enhancements" class="breadcrumb-link">&larr; Website Enhancements</a>
     <h1><%= enhancement.name %></h1>
     <% if (enhancement.description) { %>
       <p class="page-subtitle"><%= enhancement.description %></p>
@@ -140,7 +140,7 @@
     <tbody id="tasks-tbody">
       <% if (enhancement.tasks.length === 0) { %>
         <tr>
-          <td colspan="3" class="empty-row">No tasks yet. <a href="#" onclick="openNewTaskModal();return false;">Create one</a>.</td>
+          <td colspan="3" class="empty-row">No tasks yet. <a href="<%= basePath %>#" onclick="openNewTaskModal();return false;">Create one</a>.</td>
         </tr>
       <% } else { %>
         <% enhancement.tasks.forEach(function(task) { %>
